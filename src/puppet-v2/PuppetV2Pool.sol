@@ -32,8 +32,10 @@ contract PuppetV2Pool {
      *         Sender must have approved enough WETH in advance.
      *         Calculations assume that WETH and borrowed token have same amount of decimals.
      */
+    // 用 WETH 借 Token
     function borrow(uint256 borrowAmount) external {
         // Calculate how much WETH the user must deposit
+        // 需要WETH 数量更小
         uint256 amount = calculateDepositOfWETHRequired(borrowAmount);
 
         // Take the WETH
@@ -42,6 +44,7 @@ contract PuppetV2Pool {
         // internal accounting
         deposits[msg.sender] += amount;
 
+        // token转给调用者
         require(_token.transfer(msg.sender, borrowAmount), "Transfer failed");
 
         emit Borrowed(msg.sender, amount, borrowAmount, block.timestamp);
@@ -56,7 +59,8 @@ contract PuppetV2Pool {
     function _getOracleQuote(uint256 amount) private view returns (uint256) {
         (uint256 reservesWETH, uint256 reservesToken) =
             UniswapV2Library.getReserves({factory: _uniswapFactory, tokenA: address(_weth), tokenB: address(_token)});
-
+        // 通过 TokenA 返回应兑换 TokenB 的数量
+        // reservesToken 增大，reservesWETH 减小, 需要用 Token 换出 ETH
         return UniswapV2Library.quote({amountA: amount * 10 ** 18, reserveA: reservesToken, reserveB: reservesWETH});
     }
 }

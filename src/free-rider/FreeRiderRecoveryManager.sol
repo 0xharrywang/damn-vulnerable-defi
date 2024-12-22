@@ -55,6 +55,8 @@ contract FreeRiderRecoveryManager is ReentrancyGuard, IERC721Receiver {
         }
 
         if (++received == 6) {
+            // 当接收到 6 个 NFT 后， 向咱们发送 45 ether的奖励
+            // 从 _data 中 decode 出奖励接受者
             address recipient = abi.decode(_data, (address));
             payable(recipient).sendValue(bounty);
         }

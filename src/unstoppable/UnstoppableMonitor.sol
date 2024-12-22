@@ -27,7 +27,7 @@ contract UnstoppableMonitor is Owned, IERC3156FlashBorrower {
         if (initiator != address(this) || msg.sender != address(vault) || token != address(vault.asset()) || fee != 0) {
             revert UnexpectedFlashLoan();
         }
-
+        // 必须进行 approve，便于随后还账
         ERC20(token).approve(address(vault), amount);
 
         return keccak256("IERC3156FlashBorrower.onFlashLoan");

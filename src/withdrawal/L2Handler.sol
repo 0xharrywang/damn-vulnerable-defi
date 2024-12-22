@@ -19,10 +19,14 @@ contract L2Handler {
         l1Forwarder = _l1Forwarder;
     }
 
+    // 发起一笔转账消息
+    // target 为 l1Forwarder 的地址
+    // data 为l 1Forwarder.forwardMessage 相应 calldata
+    // message 为 L1Forwarder.forwardMessage 要执行的 calldata
     function sendMessage(address target, bytes calldata message) external {
         l2MessageStore.store({
             target: address(l1Forwarder),
-            data: abi.encodeCall(L1Forwarder.forwardMessage, (nonce, msg.sender, target, message))
+            data: abi.encodeCall(L1Forwarder.forwardMessage, (nonce, msg.sender, target, message)) // data 编码格式
         });
 
         unchecked {

@@ -10,8 +10,10 @@ contract L1Gateway is OwnableRoles {
     uint256 public constant OPERATOR_ROLE = _ROLE_0;
 
     bytes32 public root;
+    // 计数,每执行一笔计数加一
     uint256 public counter;
     address public xSender = address(0xBADBEEF);
+    // 记录交易 id 是否已完成
     mapping(bytes32 id => bool finalized) public finalizedWithdrawals;
 
     error BadNewRoot();
@@ -31,6 +33,9 @@ contract L1Gateway is OwnableRoles {
         root = _root;
     }
 
+    // 确定提款,由管理员调用
+    // 用来执行 L2 上提款交易并记录
+    // 每次提款都必须等待 7天才能最终确定
     function finalizeWithdrawal(
         uint256 nonce,
         address l2Sender,
@@ -45,6 +50,7 @@ contract L1Gateway is OwnableRoles {
 
         // Only allow trusted operators to finalize without proof
         bool isOperator = hasAnyRole(msg.sender, OPERATOR_ROLE);
+        // 如果不是管理员,则需要默克尔树验证
         if (!isOperator) {
             if (MerkleProof.verify(proof, root, leaf)) {
                 emit ValidProof(proof, root, leaf);
@@ -52,7 +58,9 @@ contract L1Gateway is OwnableRoles {
                 revert InvalidProof();
             }
         }
+        // 如果是管理员,可以不用验证
 
+        // 不能重复执行
         if (finalizedWithdrawals[leaf]) revert AlreadyFinalized(leaf);
 
         // state changes before external call
@@ -61,11 +69,12 @@ contract L1Gateway is OwnableRoles {
 
         xSender = l2Sender;
         bool success;
+        // 又有一个低级调用
         assembly {
             success := call(gas(), target, 0, add(message, 0x20), mload(message), 0, 0) // call with 0 value. Don't copy returndata.
         }
         xSender = address(0xBADBEEF);
-
+        // 此处总是success = true, 因为上面call 没有 revert
         emit FinalizedWithdrawal(leaf, success, isOperator);
     }
 }

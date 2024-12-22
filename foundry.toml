@@ -14,3 +14,6 @@ ignored_warnings_from = [
     "src/curvy-puppet/ICryptoSwapPool.sol"
 ]
 bytecode_hash = "none"
+
+
+no_match_contract = "ABISmuggling|Shards"

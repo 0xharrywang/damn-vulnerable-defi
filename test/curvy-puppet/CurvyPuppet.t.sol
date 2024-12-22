@@ -10,6 +10,9 @@ import {CurvyPuppetLending, IERC20} from "../../src/curvy-puppet/CurvyPuppetLend
 import {CurvyPuppetOracle} from "../../src/curvy-puppet/CurvyPuppetOracle.sol";
 import {IStableSwap} from "../../src/curvy-puppet/IStableSwap.sol";
 
+// adding
+import {CurvyPuppetExploit} from "./CurvyPuppetExploit.sol";
+
 contract CurvyPuppetChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -23,7 +26,9 @@ contract CurvyPuppetChallenge is Test {
     address constant ETH = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     // Relevant Ethereum mainnet addresses
+    // 使用 Uniswap permit2进行 token 授权
     IPermit2 constant permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+    // 主网 curve 合约, vyper 写的
     IStableSwap constant curvePool = IStableSwap(0xDC24316b9AE028F1497c275EB9192a3Ea0f67022);
     IERC20 constant stETH = IERC20(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
     WETH constant weth = WETH(payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));
@@ -52,6 +57,7 @@ contract CurvyPuppetChallenge is Test {
      */
     function setUp() public {
         // Fork from mainnet state at specific block
+        // 模拟主网环境 
         vm.createSelectFork((vm.envString("MAINNET_FORKING_URL")), 20190356);
 
         startHoax(deployer);
@@ -61,7 +67,10 @@ contract CurvyPuppetChallenge is Test {
 
         // Deploy price oracle and set prices for ETH and DVT
         oracle = new CurvyPuppetOracle();
+        // 设置价格
+        // 设置 ETH 的价格, curve pool中第一个 token 为 ETH
         oracle.setPrice({asset: ETH, value: ETHER_PRICE, expiration: block.timestamp + 1 days});
+        // 设置 dvt 的价格
         oracle.setPrice({asset: address(dvt), value: DVT_PRICE, expiration: block.timestamp + 1 days});
 
         // Deploy the lending contract. It will offer LP tokens, accepting DVT as collateral.
@@ -76,13 +85,18 @@ contract CurvyPuppetChallenge is Test {
         deal(address(weth), treasury, TREASURY_WETH_BALANCE);
 
         // Fund lending pool and treasury with initial LP tokens
+        // 模拟主网 LP 代币持有者
         vm.startPrank(0x4F48031B0EF8acCea3052Af00A3279fbA31b50D8); // impersonating mainnet LP token holder to simplify setup (:
+        // 向借贷池投入 1000 LP
         IERC20(curvePool.lp_token()).transfer(address(lending), LENDER_INITIAL_LP_BALANCE);
+        // 向 treasury 65 LP
         IERC20(curvePool.lp_token()).transfer(treasury, TREASURY_LP_BALANCE);
 
         // Treasury approves assets to player
         vm.startPrank(treasury);
+        // 向 player 授权 200 WETH
         weth.approve(player, TREASURY_WETH_BALANCE);
+        // 向 player 授权 65 LP Token
         IERC20(curvePool.lp_token()).approve(player, TREASURY_LP_BALANCE);
 
         // Users open 3 positions in the lending contract
@@ -90,6 +104,7 @@ contract CurvyPuppetChallenge is Test {
         for (uint256 i = 0; i < users.length; i++) {
             // Fund user with some collateral
             vm.startPrank(deployer);
+            // 每个人持有 dvt
             dvt.transfer(users[i], USER_INITIAL_COLLATERAL_BALANCE);
             // User deposits + borrows from lending contract
             _openPositionFor(users[i]);
@@ -106,15 +121,18 @@ contract CurvyPuppetChallenge is Test {
         // Allow permit2 handle token transfers
         IERC20(collateralAsset).approve(address(permit2), type(uint256).max);
         // Allow lending contract to pull collateral
+        // 向 lending 合约授权
         permit2.approve({
-            token: lending.collateralAsset(),
-            spender: address(lending),
-            amount: uint160(USER_INITIAL_COLLATERAL_BALANCE),
+            token: lending.collateralAsset(), // 抵押品, dvt
+            spender: address(lending), // lending 合约
+            amount: uint160(USER_INITIAL_COLLATERAL_BALANCE), // 2500 dvt
             expiration: uint48(block.timestamp)
         });
         // Deposit collateral + borrow
-        lending.deposit(USER_INITIAL_COLLATERAL_BALANCE);
-        lending.borrow(USER_BORROW_AMOUNT);
+        // 存入抵押物
+        lending.deposit(USER_INITIAL_COLLATERAL_BALANCE);  //  抵入 2500 dvt
+        // 借贷
+        lending.borrow(USER_BORROW_AMOUNT);     // 借  1 LP
     }
 
     /**
@@ -134,6 +152,8 @@ contract CurvyPuppetChallenge is Test {
         assertEq(IERC20(curvePool.lp_token()).balanceOf(treasury), TREASURY_LP_BALANCE);
 
         // Curve pool trades the expected assets
+        // Curve pool 中 第一个 token 为 ETH
+        // 第二个 token 为 stETH
         assertEq(curvePool.coins(0), ETH);
         assertEq(curvePool.coins(1), address(stETH));
 
@@ -158,7 +178,21 @@ contract CurvyPuppetChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_curvyPuppet() public checkSolvedByPlayer {
-        
+        CurvyPuppetExploit curvyPuppetExploit = new CurvyPuppetExploit(
+            curvePool, 
+            lending, 
+            IERC20(curvePool.lp_token()), 
+            address(player), 
+            stETH,
+            weth,
+            address(treasury),dvt
+        );
+        // 
+        IERC20(curvePool.lp_token()).transferFrom(address(treasury), address(curvyPuppetExploit), TREASURY_LP_BALANCE);
+        weth.transferFrom(address(treasury), address(curvyPuppetExploit), TREASURY_WETH_BALANCE);
+
+        curvyPuppetExploit.executeExploit();
+    
     }
 
     /**

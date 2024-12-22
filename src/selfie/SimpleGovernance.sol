@@ -10,7 +10,7 @@ contract SimpleGovernance is ISimpleGovernance {
     using Address for address;
 
     uint256 private constant ACTION_DELAY_IN_SECONDS = 2 days;
-
+    // 投票合约
     DamnValuableVotes private _votingToken;
     uint256 private _actionCounter;
     mapping(uint256 => GovernanceAction) private _actions;
@@ -20,7 +20,11 @@ contract SimpleGovernance is ISimpleGovernance {
         _actionCounter = 1;
     }
 
+
+    // 2.提案 Action 入队
+    // q 能否通过该方法添加一笔提案交易？
     function queueAction(address target, uint128 value, bytes calldata data) external returns (uint256 actionId) {
+        // 3.需要投票数过半才能进行
         if (!_hasEnoughVotes(msg.sender)) {
             revert NotEnoughVotes(msg.sender);
         }
@@ -50,7 +54,9 @@ contract SimpleGovernance is ISimpleGovernance {
         emit ActionQueued(actionId, msg.sender);
     }
 
+    // 2.执行提案 Action
     function executeAction(uint256 actionId) external payable returns (bytes memory) {
+        // 满足执行时间
         if (!_canBeExecuted(actionId)) {
             revert CannotExecute(actionId);
         }
@@ -59,7 +65,7 @@ contract SimpleGovernance is ISimpleGovernance {
         actionToExecute.executedAt = uint64(block.timestamp);
 
         emit ActionExecuted(actionId, msg.sender);
-
+        // 执行该 Action
         return actionToExecute.target.functionCallWithValue(actionToExecute.data, actionToExecute.value);
     }
 
@@ -98,6 +104,8 @@ contract SimpleGovernance is ISimpleGovernance {
     }
 
     function _hasEnoughVotes(address who) private view returns (bool) {
+        // 票数大于一半则成功
+        // 4. 查看_votingToken逻辑
         uint256 balance = _votingToken.getVotes(who);
         uint256 halfTotalSupply = _votingToken.totalSupply() / 2;
         return balance > halfTotalSupply;

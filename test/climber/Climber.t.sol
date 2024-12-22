@@ -8,6 +8,9 @@ import {ClimberTimelock, CallerNotTimelock, PROPOSER_ROLE, ADMIN_ROLE} from "../
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 
+// adding
+import {ClimberExploit} from "./ClimberExploit.sol";
+
 contract ClimberChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -39,10 +42,13 @@ contract ClimberChallenge is Test {
 
         // Deploy the vault behind a proxy,
         // passing the necessary addresses for the `ClimberVault::initialize(address,address,address)` function
+        // ?? UUPS代理构造
         vault = ClimberVault(
             address(
+                // 代理合约
                 new ERC1967Proxy(
                     address(new ClimberVault()), // implementation
+                    // 初始化
                     abi.encodeCall(ClimberVault.initialize, (deployer, proposer, sweeper)) // initialization data
                 )
             )
@@ -85,7 +91,12 @@ contract ClimberChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_climber() public checkSolvedByPlayer {
-        
+        ClimberExploit climberExploit = new ClimberExploit(vault, timelock, token, recovery);
+
+        console.log("before vault token balance: ", token.balanceOf(address(vault)));
+        climberExploit.rescue();
+        console.log("after vault token balance: ", token.balanceOf(address(vault)));
+
     }
 
     /**

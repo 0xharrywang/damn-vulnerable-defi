@@ -7,3 +7,12 @@ Now they’re using a Uniswap v2 exchange as a price oracle, along with the reco
 You start with 20 ETH and 10000 DVT tokens in balance. The pool has a million DVT tokens in balance at risk!
 
 Save all funds from the pool, depositing them into the designated recovery account.
+
+---
+使用UniswwapV2
+
+初始条件:
+- pool: 1000000 DVT
+- player: 20 ETH and 10000 DVT
+
+从 pool 转移所有 DVT 到 recovery 账户

@@ -18,7 +18,7 @@ contract WalletDeployer {
     uint256 public constant pay = 1 ether;
     address public immutable chief = msg.sender;
     address public immutable gem;
-
+    // slot0
     address public mom;
     address public hat;
 
@@ -33,6 +33,7 @@ contract WalletDeployer {
     /**
      * @notice Allows the chief to set an authorizer contract.
      */
+    // 设置
     function rule(address _mom) external {
         if (msg.sender != chief || _mom == address(0) || mom != address(0)) {
             revert Boom();
@@ -44,6 +45,7 @@ contract WalletDeployer {
      * @notice Allows the caller to deploy a new Safe account and receive a payment in return.
      *         If the authorizer is set, the caller must be authorized to execute the deployment
      */
+    // 部署钱包, 获得奖励
     function drop(address aim, bytes memory wat, uint256 num) external returns (bool) {
         if (mom != address(0) && !can(msg.sender, aim)) {
             return false;
@@ -53,12 +55,14 @@ contract WalletDeployer {
             return false;
         }
 
+        // 部署成功safe钱包，奖励 1 DVT
         if (IERC20(gem).balanceOf(address(this)) >= pay) {
             IERC20(gem).transfer(msg.sender, pay);
         }
         return true;
     }
 
+    // 
     function can(address u, address a) public view returns (bool y) {
         assembly {
             let m := sload(0)

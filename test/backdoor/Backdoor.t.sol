@@ -8,6 +8,9 @@ import {SafeProxyFactory} from "@safe-global/safe-smart-account/contracts/proxie
 import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 import {WalletRegistry} from "../../src/backdoor/WalletRegistry.sol";
 
+// adding 
+import {BackdoorExploit} from  "./BackdoorExploit.sol";
+
 contract BackdoorChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -34,6 +37,7 @@ contract BackdoorChallenge is Test {
     function setUp() public {
         startHoax(deployer);
         // Deploy Safe copy and factory
+        // 先部署 Safe 合约，作为 singleton
         singletonCopy = new Safe();
         walletFactory = new SafeProxyFactory();
 
@@ -70,7 +74,17 @@ contract BackdoorChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_backdoor() public checkSolvedByPlayer {
-        
+        BackdoorExploit backdoorExploit = new BackdoorExploit(
+            singletonCopy, 
+            walletFactory, 
+            token, 
+            walletRegistry, 
+            users, 
+            recovery
+        );
+        backdoorExploit.rescue();
+
+        console.log("recovery balance: ", token.balanceOf(recovery));
     }
 
     /**

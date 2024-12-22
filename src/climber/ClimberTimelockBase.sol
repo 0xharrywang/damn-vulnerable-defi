@@ -23,6 +23,7 @@ abstract contract ClimberTimelockBase is AccessControl {
     // Operations are tracked by their bytes32 identifier
     mapping(bytes32 => Operation) public operations;
 
+    // 多少秒后可以执行
     uint64 public delay;
 
     function getOperationState(bytes32 id) public view returns (OperationState state) {
@@ -34,6 +35,7 @@ abstract contract ClimberTimelockBase is AccessControl {
             } else if (block.timestamp < op.readyAtTimestamp) {
                 state = OperationState.Scheduled;
             } else {
+                // 该状态下，才能 execute
                 state = OperationState.ReadyForExecution;
             }
         } else {

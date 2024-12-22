@@ -5,3 +5,7 @@ More and more lending pools are offering flashloans. In this case, a new pool ha
 The pool holds 1 million DVT tokens. You have nothing.
 
 To pass this challenge, rescue all funds in the pool executing a single transaction. Deposit the funds into the designated recovery account.
+
+---
+
+使用approve

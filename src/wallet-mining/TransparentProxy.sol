@@ -24,10 +24,11 @@ contract TransparentProxy is ERC1967Proxy {
     function isUpgrader(address who) public view returns (bool) {
         return who == upgrader;
     }
-
+    // 通过此处 upgrade
     function _fallback() internal override {
         if (isUpgrader(msg.sender)) {
             require(msg.sig == bytes4(keccak256("upgradeToAndCall(address, bytes)")));
+            // 更新
             _dispatchUpgradeToAndCall();
         } else {
             super._fallback();

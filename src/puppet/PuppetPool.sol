@@ -27,7 +27,9 @@ contract PuppetPool is ReentrancyGuard {
     }
 
     // Allows borrowing tokens by first depositing two times their value in ETH
+    // 借amount数量的dvt: 用户投入 eth, 借得 dvt
     function borrow(uint256 amount, address recipient) external payable nonReentrant {
+        // 根据要换的Token数量 amount 计算要求支付的 ETH 数量
         uint256 depositRequired = calculateDepositRequired(amount);
 
         if (msg.value < depositRequired) {
@@ -36,6 +38,7 @@ contract PuppetPool is ReentrancyGuard {
 
         if (msg.value > depositRequired) {
             unchecked {
+                // 返还多余的 eth
                 payable(msg.sender).sendValue(msg.value - depositRequired);
             }
         }
@@ -45,19 +48,24 @@ contract PuppetPool is ReentrancyGuard {
         }
 
         // Fails if the pool doesn't have enough tokens in liquidity
+        // 转账
         if (!token.transfer(recipient, amount)) {
             revert TransferFailed();
         }
 
         emit Borrowed(msg.sender, recipient, depositRequired, amount);
     }
-
+    // !!! 漏洞：预言机
+    // amount为要兑换的 token 数量
     function calculateDepositRequired(uint256 amount) public view returns (uint256) {
         return amount * _computeOraclePrice() * DEPOSIT_FACTOR / 10 ** 18;
     }
 
+    // 通过预言机计算价格
     function _computeOraclePrice() private view returns (uint256) {
         // calculates the price of the token in wei according to Uniswap pair
+        // ETH / Token 的比值
+        // 要使比值低，增大池子中 token 总值， 即用户用 token 换 eth
         return uniswapPair.balance * (10 ** 18) / token.balanceOf(uniswapPair);
     }
 }

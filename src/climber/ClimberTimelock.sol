@@ -19,6 +19,7 @@ import {
  * @title ClimberTimelock
  * @author
  */
+// 该合约为Vault的拥有者
 contract ClimberTimelock is ClimberTimelockBase {
     using Address for address;
 
@@ -38,6 +39,7 @@ contract ClimberTimelock is ClimberTimelockBase {
         delay = 1 hours;
     }
 
+    // 只能被 PROPOSER 调用
     function schedule(
         address[] calldata targets,
         uint256[] calldata values,
@@ -69,6 +71,7 @@ contract ClimberTimelock is ClimberTimelockBase {
     /**
      * Anyone can execute what's been scheduled via `schedule`
      */
+    // 执行底层交易
     function execute(address[] calldata targets, uint256[] calldata values, bytes[] calldata dataElements, bytes32 salt)
         external
         payable
@@ -84,17 +87,18 @@ contract ClimberTimelock is ClimberTimelockBase {
         if (targets.length != dataElements.length) {
             revert InvalidDataElementsCount();
         }
-
+        // 计算一个唯一的id
         bytes32 id = getOperationId(targets, values, dataElements, salt);
 
         for (uint8 i = 0; i < targets.length; ++i) {
+            // 执行提案
             targets[i].functionCallWithValue(dataElements[i], values[i]);
         }
-
+        // !!! 漏洞：先执行交易，再进行检查，不满足CEI原则
+        // 只有当 ReadyForExecution 时 才能往下执行
         if (getOperationState(id) != OperationState.ReadyForExecution) {
             revert NotReadyForExecution(id);
         }
-
         operations[id].executed = true;
     }
 

@@ -12,6 +12,9 @@ import {FreeRiderNFTMarketplace} from "../../src/free-rider/FreeRiderNFTMarketpl
 import {FreeRiderRecoveryManager} from "../../src/free-rider/FreeRiderRecoveryManager.sol";
 import {DamnValuableNFT} from "../../src/DamnValuableNFT.sol";
 
+// adding
+import {FreeRiderExploit} from "./FreeRiderExploit.sol";
+
 contract FreeRiderChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -63,7 +66,10 @@ contract FreeRiderChallenge is Test {
             deployCode("builds/uniswap/UniswapV2Router02.json", abi.encode(address(uniswapV2Factory), address(weth)))
         );
 
+        
         token.approve(address(uniswapV2Router), UNISWAP_INITIAL_TOKEN_RESERVE);
+        // 添加流动性
+        // 资产对：ETH - token
         uniswapV2Router.addLiquidityETH{value: UNISWAP_INITIAL_WETH_RESERVE}(
             address(token), // token to be traded against WETH
             UNISWAP_INITIAL_TOKEN_RESERVE, // amountTokenDesired
@@ -82,9 +88,15 @@ contract FreeRiderChallenge is Test {
 
         // Get a reference to the deployed NFT contract. Then approve the marketplace to trade them.
         nft = marketplace.token();
+        // 所有 NFT 授权给 marketplace
         nft.setApprovalForAll(address(marketplace), true);
 
         // Open offers in the marketplace
+        // 6个NFT
+        // 1 -> 15 ether
+        // 2 -> 15 ether
+        // ...
+        // 6 -> 15 ether
         uint256[] memory ids = new uint256[](AMOUNT_OF_NFTS);
         uint256[] memory prices = new uint256[](AMOUNT_OF_NFTS);
         for (uint256 i = 0; i < AMOUNT_OF_NFTS; i++) {
@@ -123,7 +135,20 @@ contract FreeRiderChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_freeRider() public checkSolvedByPlayer {
-        
+        FreeRiderExploit freeRiderExploit = new FreeRiderExploit(
+            weth,
+            uniswapPair,
+            marketplace,
+            nft,
+            recoveryManager,
+            recoveryManagerOwner,
+            NFT_PRICE,
+            AMOUNT_OF_NFTS
+        );
+
+        freeRiderExploit.rescue();
+        // 120 eth
+        console.log("finish eth: %e", address(player).balance);
     }
 
     /**

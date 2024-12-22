@@ -7,3 +7,7 @@ To claim rewards, users must prove they're included in the chosen set of benefic
 Alice has claimed her rewards already. You can claim yours too! But you've realized there's a critical vulnerability in the contract.
 
 Save as much funds as you can from the distributor. Transfer all recovered assets to the designated recovery account.
+
+---
+
+追回分发器合约资产，将这些资产转移到recovery账户

@@ -14,3 +14,12 @@ Recover all tokens from the wallet deployer contract and send them to the corres
 
 In a single transaction.
 
+---
+
+该合约激励用户去部署Safe钱包，奖励 1 DVT， 只能由deployers支付
+团队向`0x8be6a88D3871f793aD5D5e24eF39e1bf5be31d2b`地址发送 20 million DVT
+丢失了nonce
+
+目标：
+- 救援钱包deployer合约的所有 Token
+- 1笔交易

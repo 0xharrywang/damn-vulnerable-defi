@@ -13,6 +13,7 @@ import {OracleLibrary} from "@uniswap/v3-periphery/contracts/libraries/OracleLib
  */
 contract PuppetV3Pool {
     uint256 public constant DEPOSIT_FACTOR = 3;
+    // !!! 漏洞：时间过低
     uint32 public constant TWAP_PERIOD = 10 minutes;
 
     WETH public immutable weth;
@@ -37,6 +38,7 @@ contract PuppetV3Pool {
      */
     function borrow(uint256 borrowAmount) external {
         // Calculate how much WETH the user must deposit
+        // 计算应支付的 WETH
         uint256 depositOfWETHRequired = calculateDepositOfWETHRequired(borrowAmount);
 
         //TODO: use Permit2 (0x000000000022D473030F116dDEE9F6B43aC78BA3)
@@ -58,6 +60,7 @@ contract PuppetV3Pool {
         return quote * DEPOSIT_FACTOR;
     }
 
+    // 预言机
     function _getOracleQuote(uint128 amount) private view returns (uint256) {
         (int24 arithmeticMeanTick,) = OracleLibrary.consult({pool: address(uniswapV3Pool), secondsAgo: TWAP_PERIOD});
         return OracleLibrary.getQuoteAtTick({

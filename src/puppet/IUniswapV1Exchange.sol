@@ -43,9 +43,11 @@ interface IUniswapV1Exchange {
     function tokenToEthSwapOutput(uint256 eth_bought, uint256 max_tokens, uint256 deadline)
         external
         returns (uint256 out);
+    // token 作为 input， 指定要卖出的 token
     function tokenToEthTransferInput(uint256 tokens_sold, uint256 min_eth, uint256 deadline, address recipient)
         external
         returns (uint256 out);
+    // token 作为 output，指定要买入的 eth
     function tokenToEthTransferOutput(uint256 eth_bought, uint256 max_tokens, uint256 deadline, address recipient)
         external
         returns (uint256 out);

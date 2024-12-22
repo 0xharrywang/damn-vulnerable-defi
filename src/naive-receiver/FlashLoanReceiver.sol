@@ -18,6 +18,8 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
     {
         assembly {
             // gas savings
+            // pool 若和 caller 不同，则 revert
+            // 返回的 0x48f5c3ed 是啥？
             if iszero(eq(sload(pool.slot), caller())) {
                 mstore(0x00, 0x48f5c3ed)
                 revert(0x1c, 0x04)
@@ -34,6 +36,7 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
         _executeActionDuringFlashLoan();
 
         // Return funds to pool
+        // approve 还款数额
         WETH(payable(token)).approve(pool, amountToBeRepaid);
 
         return keccak256("ERC3156FlashBorrower.onFlashLoan");

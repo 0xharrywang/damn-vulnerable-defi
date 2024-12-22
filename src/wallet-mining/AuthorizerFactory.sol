@@ -9,11 +9,11 @@ contract AuthorizerFactory {
     function deployWithProxy(address[] memory wards, address[] memory aims, address upgrader)
         external
         returns (address authorizer)
-    {
+    {   // 代理合约 作为 授权者
         authorizer = address(
             new TransparentProxy( // proxy
-                address(new AuthorizerUpgradeable()), // implementation
-                abi.encodeCall(AuthorizerUpgradeable.init, (wards, aims)) // init data
+                address(new AuthorizerUpgradeable()), // implementation合约
+                abi.encodeCall(AuthorizerUpgradeable.init, (wards, aims)) // constructor中执行初始化
             )
         );
         assert(AuthorizerUpgradeable(authorizer).needsInit() == 0); // invariant

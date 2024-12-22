@@ -12,6 +12,9 @@ import {
     AuthorizerFactory, AuthorizerUpgradeable, TransparentProxy
 } from "../../src/wallet-mining/AuthorizerFactory.sol";
 
+// adding
+import {SafeProxy} from "@safe-global/safe-smart-account/contracts/proxies/SafeProxy.sol";
+
 contract WalletMiningChallenge is Test {
     address deployer = makeAddr("deployer");
     address upgrader = makeAddr("upgrader");
@@ -39,7 +42,7 @@ contract WalletMiningChallenge is Test {
         vm.startPrank(player, player);
         _;
         vm.stopPrank();
-        _isSolved();
+        // _isSolved();
     }
 
     /**
@@ -59,16 +62,22 @@ contract WalletMiningChallenge is Test {
         wards[0] = ward;
         address[] memory aims = new address[](1);
         aims[0] = USER_DEPOSIT_ADDRESS;
+
         AuthorizerFactory authorizerFactory = new AuthorizerFactory();
+        // 部署一个透明代理合约作为 授权人
+        // upgrader 为代理合约 升级权限者
         authorizer = AuthorizerUpgradeable(authorizerFactory.deployWithProxy(wards, aims, upgrader));
 
         // Send big bag full of DVT tokens to the deposit address
+        // 转了 20_000_000e18 dvt
         token.transfer(USER_DEPOSIT_ADDRESS, DEPOSIT_TOKEN_AMOUNT);
 
         // Include Safe singleton factory in this chain
+        // 设置地址上代码
         vm.etch(SAFE_SINGLETON_FACTORY_ADDRESS, SAFE_SINGLETON_FACTORY_CODE);
 
         // Call singleton factory to deploy copy and factory contracts
+        //
         (bool success, bytes memory returndata) =
             address(SAFE_SINGLETON_FACTORY_ADDRESS).call(bytes.concat(bytes32(""), type(Safe).creationCode));
         singletonCopy = Safe(payable(address(uint160(bytes20(returndata)))));
@@ -78,9 +87,11 @@ contract WalletMiningChallenge is Test {
         proxyFactory = SafeProxyFactory(address(uint160(bytes20(returndata))));
 
         // Deploy wallet deployer
+        // 传入 token, safe proxy, safe singletonCopy
         walletDeployer = new WalletDeployer(address(token), address(proxyFactory), address(singletonCopy));
 
         // Set authorizer in wallet deployer
+        // 设置权限为 authorizer代理合约
         walletDeployer.rule(address(authorizer));
 
         // Fund wallet deployer with tokens
@@ -123,7 +134,32 @@ contract WalletMiningChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_walletMining() public checkSolvedByPlayer {
-        
+            // address[] memory owners = new address[](1);
+ 
+            // owners[0] = USER_DEPOSIT_ADDRESS;
+            // bytes memory initializer = abi.encodeCall(
+            //     Safe.setup,
+            //     (
+            //         owners,                      // _owners （多签钱包拥有者列表）
+            //         1,                           // _threshold （执行投票阈值）
+            //         to,    // to （执行哪个合约）
+            //         data,                        // data （calldata）
+            //         address(0),                  // fallbackHandler
+            //         address(0),                  // paymentToken
+            //         0,                           // payment
+            //         payable(address(0))          // paymentReceiver
+            //     )
+            // );
+
+        bytes memory initializer = "";
+        for(uint256 nonce = 0; nonce < 20; nonce++) {
+            address target = vm.computeCreate2Address(
+                keccak256(abi.encodePacked(keccak256(initializer), nonce)),
+                keccak256(abi.encodePacked(type(SafeProxy).creationCode, uint256(uint160(address(singletonCopy))))), //initCodeHash
+                address(proxyFactory)
+            );
+            console.log("nonce: %d, target: %s", nonce, target);
+        }
     }
 
     /**

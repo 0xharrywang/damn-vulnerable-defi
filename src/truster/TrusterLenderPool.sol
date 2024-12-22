@@ -17,6 +17,8 @@ contract TrusterLenderPool is ReentrancyGuard {
         token = _token;
     }
 
+    // borrower
+    // target
     function flashLoan(uint256 amount, address borrower, address target, bytes calldata data)
         external
         nonReentrant
@@ -25,8 +27,13 @@ contract TrusterLenderPool is ReentrancyGuard {
         uint256 balanceBefore = token.balanceOf(address(this));
 
         token.transfer(borrower, amount);
+        // !!! 漏洞
+        // token.transfer -> token.approve(attacker)
         target.functionCall(data);
 
+        // erc20 余额检查
+        // 此处绕开原理：在该函数内只执行了 approve， balance不变
+        // 结束该函数后，再执行 transfrom
         if (token.balanceOf(address(this)) < balanceBefore) {
             revert RepayFailed();
         }

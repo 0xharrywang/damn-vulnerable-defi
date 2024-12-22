@@ -9,7 +9,7 @@ import {DamnValuableNFT} from "../DamnValuableNFT.sol";
 
 contract Exchange is ReentrancyGuard {
     using Address for address payable;
-
+    // NFT
     DamnValuableNFT public immutable token;
     TrustfulOracle public immutable oracle;
 
@@ -22,11 +22,13 @@ contract Exchange is ReentrancyGuard {
     event TokenSold(address indexed seller, uint256 tokenId, uint256 price);
 
     constructor(address _oracle) payable {
+        // 部署 NFT, Exchange 合约有 MINT 权限
         token = new DamnValuableNFT();
         token.renounceOwnership();
         oracle = TrustfulOracle(_oracle);
     }
 
+    // 外部用户调用购买
     function buyOne() external payable nonReentrant returns (uint256 id) {
         if (msg.value == 0) {
             revert InvalidPayment();
@@ -37,15 +39,18 @@ contract Exchange is ReentrancyGuard {
         if (msg.value < price) {
             revert InvalidPayment();
         }
-
+        // min 一个 NFT
+        // 如果是合约调用，需要执行_checkOnERC721Received
         id = token.safeMint(msg.sender);
         unchecked {
+            // 向合约转 ETH
             payable(msg.sender).sendValue(msg.value - price);
         }
 
         emit TokenBought(msg.sender, id, price);
     }
 
+    // 用户出售 NFT
     function sellOne(uint256 id) external nonReentrant {
         if (msg.sender != token.ownerOf(id)) {
             revert SellerNotOwner(id);

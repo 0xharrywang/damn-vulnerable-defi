@@ -69,27 +69,48 @@ contract UnstoppableVault is IERC3156FlashLender, ReentrancyGuard, Owned, ERC462
      * @inheritdoc ERC4626
      */
     function totalAssets() public view override nonReadReentrant returns (uint256) {
+        // 该 vault （ERC4626）中 资产总余额 
         return asset.balanceOf(address(this));
     }
 
     /**
      * @inheritdoc IERC3156FlashLender
      */
+     // 核心逻辑：闪电贷
+     // receiver 借款者（合约）
+     // _token  资产地址
+     // amount 为欲借资产数量
     function flashLoan(IERC3156FlashBorrower receiver, address _token, uint256 amount, bytes calldata data)
         external
         returns (bool)
     {
+        // 闪电贷金额不能为 0
         if (amount == 0) revert InvalidAmount(0); // fail early
+         // 传入的token应为valut中的资产
         if (address(asset) != _token) revert UnsupportedCurrency(); // enforce ERC3156 requirement
+        // valut池子中总资产
         uint256 balanceBefore = totalAssets();
+        
+        // ERC4626
+        // 保障措施，闪电贷未还款时阻止再进行
+        // !!! 强制使 总份额 和 总资产 相等
+        // assets.mulDivDown(supply, totalAssets())
+        // 
+        // shares = assets * totalSupply / totalAssets
+        // 
+        // -> totalSupply * totalSupply / totalAssets  = totalAssets
+        // -> totalSupply = totalAssets
         if (convertToShares(totalSupply) != balanceBefore) revert InvalidBalance(); // enforce ERC4626 requirement
 
         // transfer tokens out + execute callback on receiver
+        // 将资产 DVT 借给了 receiver
         ERC20(_token).safeTransfer(address(receiver), amount);
 
         // callback must return magic value, otherwise assume it failed
         uint256 fee = flashFee(_token, amount);
         if (
+            // receiver进行使用资产，并随后进行 approve
+            // receive.onFlashLoan 调用应该始终返回 keccak256("IERC3156FlashBorrower.onFlashLoan")
             receiver.onFlashLoan(msg.sender, address(asset), amount, fee, data)
                 != keccak256("IERC3156FlashBorrower.onFlashLoan")
         ) {
@@ -97,7 +118,9 @@ contract UnstoppableVault is IERC3156FlashLender, ReentrancyGuard, Owned, ERC462
         }
 
         // pull amount + fee from receiver, then pay the fee to the recipient
+        // 要求还回相应资产 DVT（上面 receiver.onFlashLoan 中已进行 approve）
         ERC20(_token).safeTransferFrom(address(receiver), address(this), amount + fee);
+        // 合约向指定地址支付相应手续费
         ERC20(_token).safeTransfer(feeRecipient, fee);
 
         return true;

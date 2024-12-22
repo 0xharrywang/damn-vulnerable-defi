@@ -29,6 +29,7 @@ contract FreeRiderNFTMarketplace is ReentrancyGuard {
     constructor(uint256 amount) payable {
         DamnValuableNFT _token = new DamnValuableNFT();
         _token.renounceOwnership();
+        // 铸造 6 个 NFT，拥有者为 market 本合约
         for (uint256 i = 0; i < amount;) {
             _token.safeMint(msg.sender);
             unchecked {
@@ -37,7 +38,7 @@ contract FreeRiderNFTMarketplace is ReentrancyGuard {
         }
         token = _token;
     }
-
+    // 给出价格、上架
     function offerMany(uint256[] calldata tokenIds, uint256[] calldata prices) external nonReentrant {
         uint256 amount = tokenIds.length;
         if (amount == 0) {
@@ -79,7 +80,7 @@ contract FreeRiderNFTMarketplace is ReentrancyGuard {
 
         emit NFTOffered(msg.sender, tokenId, price);
     }
-
+    // !!! 漏洞, 没有对多个NFT检查msg.value
     function buyMany(uint256[] calldata tokenIds) external payable nonReentrant {
         for (uint256 i = 0; i < tokenIds.length; ++i) {
             unchecked {
@@ -93,7 +94,7 @@ contract FreeRiderNFTMarketplace is ReentrancyGuard {
         if (priceToPay == 0) {
             revert TokenNotOffered(tokenId);
         }
-
+        // !!!漏洞： msg.sender 只需大于每一个的价格即可
         if (msg.value < priceToPay) {
             revert InsufficientPayment();
         }
@@ -102,9 +103,11 @@ contract FreeRiderNFTMarketplace is ReentrancyGuard {
 
         // transfer from seller to buyer
         DamnValuableNFT _token = token; // cache for gas savings
+        // !!! 执行完成后会将 owner 改为新的
         _token.safeTransferFrom(_token.ownerOf(tokenId), msg.sender, tokenId);
 
         // pay seller using cached token
+        // !!!漏洞： 此时 nft 的 owner 为新的
         payable(_token.ownerOf(tokenId)).sendValue(priceToPay);
 
         emit NFTBought(msg.sender, tokenId, priceToPay);

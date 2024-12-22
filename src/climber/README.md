@@ -9,3 +9,11 @@ On the vault there’s an additional role with powers to sweep all tokens in cas
 On the timelock, only an account with a “Proposer” role can schedule actions that can be executed 1 hour later.
 
 You must rescue all tokens from the vault and deposit them into the designated recovery account.
+
+--
+
+条件：
+- 每 15 天提币
+
+目标：救援所有代币
+

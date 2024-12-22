@@ -28,6 +28,7 @@ contract ClimberVault is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
+        // ??
         _disableInitializers();
     }
 
@@ -37,6 +38,7 @@ contract ClimberVault is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         __UUPSUpgradeable_init();
 
         // Deploy timelock and transfer ownership to it
+        // 将合约的控制权转给 ClimberTimelock
         transferOwnership(address(new ClimberTimelock(admin, proposer)));
 
         _setSweeper(sweeper);
@@ -59,6 +61,8 @@ contract ClimberVault is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     // Allows trusted sweeper account to retrieve any tokens
+    // 
+    // sweeper 可以提走所有Token(但可惜无法成为sweep)
     function sweepFunds(address token) external onlySweeper {
         SafeTransferLib.safeTransfer(token, _sweeper, IERC20(token).balanceOf(address(this)));
     }

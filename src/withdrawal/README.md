@@ -9,3 +9,11 @@ You were given the event logs of 4 withdrawals initiated on L2 in a JSON file. T
 But there's one suspicious among them, isn't there? You may want to double-check, because all funds might be at risk. Luckily you are a bridge operator with special powers.
 
 Protect the bridge by finalizing _all_ given withdrawals, preventing the suspicious one from executing, and somehow not draining all funds.
+
+---
+
+从 L2 提款到 L1
+
+JSON 文件中包含 4 个在 L2 上发起的提取事件
+
+目标:以一种不耗尽所有资金的方式来保护桥(最终桥上资金 x: 99w < x < 100w)。

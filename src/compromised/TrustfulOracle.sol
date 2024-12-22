@@ -25,13 +25,18 @@ contract TrustfulOracle is AccessControlEnumerable {
         if (sources.length < MIN_SOURCES) {
             revert NotEnoughSources();
         }
+        // 0x188Ea627E3531Db590e6f1D71ED83628d1933088,
+        // 0xA417D473c40a4d42BAd35f147c21eEa7973539D8,
+        // 0xab3600bF153A316dE44827e2473056d56B774a40
         for (uint256 i = 0; i < sources.length;) {
             unchecked {
+                // 授予地址 TRUSTED_SOURCE_ROLE 权限
                 _grantRole(TRUSTED_SOURCE_ROLE, sources[i]);
                 ++i;
             }
         }
-        if (enableInitialization) {
+        if (enableInitialization) { 
+                // 授予 msg.sender INITIALIZER_ROLE权限
             _grantRole(INITIALIZER_ROLE, msg.sender);
         }
     }
@@ -61,10 +66,12 @@ contract TrustfulOracle is AccessControlEnumerable {
     }
 
     function getAllPricesForSymbol(string memory symbol) public view returns (uint256[] memory prices) {
+        // 获取3个可信地址
         uint256 numberOfSources = getRoleMemberCount(TRUSTED_SOURCE_ROLE);
         prices = new uint256[](numberOfSources);
         for (uint256 i = 0; i < numberOfSources;) {
             address source = getRoleMember(TRUSTED_SOURCE_ROLE, i);
+            // 获取每个地址的 price
             prices[i] = getPriceBySource(symbol, source);
             unchecked {
                 ++i;
@@ -75,13 +82,13 @@ contract TrustfulOracle is AccessControlEnumerable {
     function getPriceBySource(string memory symbol, address source) public view returns (uint256) {
         return _pricesBySource[source][symbol];
     }
-
+    // 设置 price
     function _setPrice(address source, string memory symbol, uint256 newPrice) private {
         uint256 oldPrice = _pricesBySource[source][symbol];
         _pricesBySource[source][symbol] = newPrice;
         emit UpdatedPrice(source, symbol, oldPrice, newPrice);
     }
-
+    // 计算平均价格
     function _computeMedianPrice(string memory symbol) private view returns (uint256) {
         uint256[] memory prices = getAllPricesForSymbol(symbol);
         LibSort.insertionSort(prices);
@@ -90,6 +97,7 @@ contract TrustfulOracle is AccessControlEnumerable {
             uint256 rightPrice = prices[prices.length / 2];
             return (leftPrice + rightPrice) / 2;
         } else {
+            // 取排序后的中间值
             return prices[prices.length / 2];
         }
     }

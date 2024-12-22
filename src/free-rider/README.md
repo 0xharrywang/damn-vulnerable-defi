@@ -9,3 +9,11 @@ They’re offering a bounty of 45 ETH for whoever is willing to take the NFTs ou
 You’ve agreed to help. Although, you only have 0.1 ETH in balance. The devs just won’t reply to your messages asking for more.
 
 If only you could get free ETH, at least for an instant.
+
+---
+
+初始条件：
+- 已铸造 6 NFT， 每个 15 ETH (共75 ETH)
+- player： 0.1 ETH
+
+目标：将 NFT 发到指定 recovery 地址

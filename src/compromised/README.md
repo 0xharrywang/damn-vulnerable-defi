@@ -19,3 +19,11 @@ A related on-chain exchange is selling (absurdly overpriced) collectibles called
 This price is fetched from an on-chain oracle, based on 3 trusted reporters: `0x188...088`, `0xA41...9D8` and `0xab3...a40`.
 
 Starting with just 0.1 ETH in balance, pass the challenge by rescuing all ETH available in the exchange. Then deposit the funds into the designated recovery account.
+
+---
+
+一个相关的链上交易所正在出售一种价格极其离谱的名为 “DVNFT” 的收藏品，目前每个售价为 999 ETH。
+
+player：只有 0.1 ETH 的余额
+
+目标：拯救交易所内的所有可用 ETH ，并存入指定账户

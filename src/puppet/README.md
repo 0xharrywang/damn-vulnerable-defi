@@ -5,3 +5,15 @@ There’s a lending pool where users can borrow Damn Valuable Tokens (DVTs). To 
 There’s a DVT market opened in an old Uniswap v1 exchange, currently with 10 ETH and 10 DVT in liquidity.
 
 Pass the challenge by saving all tokens from the lending pool, then depositing them into the designated recovery account. You start with 25 ETH and 1000 DVTs in balance.
+
+---
+
+借贷池，用户可以借贷DVT
+
+初始条件：
+- 借贷池：100000 DVT
+- Uniswapv1流动性: 10 ETH / 10 DVT
+- player： 25 ETH  & 1000 DVT
+
+目标：借贷池中所有 token 转移到 recovery账户中
+- 一笔交易中执行

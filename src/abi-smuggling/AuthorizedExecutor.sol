@@ -5,6 +5,9 @@ pragma solidity =0.8.25;
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
+// test
+import {console} from "forge-std/Test.sol";
+
 abstract contract AuthorizedExecutor is ReentrancyGuard {
     using Address for address;
 
@@ -46,11 +49,15 @@ abstract contract AuthorizedExecutor is ReentrancyGuard {
     function execute(address target, bytes calldata actionData) external nonReentrant returns (bytes memory) {
         // Read the 4-bytes selector at the beginning of `actionData`
         bytes4 selector;
+        // 100
         uint256 calldataOffset = 4 + 32 * 3; // calldata position where `actionData` begins
         assembly {
             selector := calldataload(calldataOffset)
         }
 
+        console.log("inner selector: ");
+        console.logBytes4(selector);
+        // !!! 绕过
         if (!permissions[getActionId(selector, msg.sender, target)]) {
             revert NotAllowed();
         }

@@ -2,8 +2,11 @@
 // Damn Vulnerable DeFi v4 (https://damnvulnerabledefi.xyz)
 pragma solidity =0.8.25;
 
+// 作为实现合约
 contract AuthorizerUpgradeable {
+    // slot0
     uint256 public needsInit = 1;
+    
     mapping(address => mapping(address => uint256)) private wards;
 
     event Rely(address indexed usr, address aim);

